@@ -1,0 +1,151 @@
+FILENAME REFFILE '/home/nhandyjr0/ool_pds.csv';
+
+proc import datafile=REFFILE
+	dbms=csv
+	out=import;
+	getnames=yes;
+run;
+
+proc contents data=import; run;
+
+
+proc sql;
+create table home.ool_rename as
+select 	 
+     W1_A12 as ObamaApprove_b
+    ,w1_l2_4 as TeaPartyMem_b
+
+/* Socio-Econ Information */
+    ,w1_p2 as ClassCat
+    ,w1_p3 as ClassFam
+    ,w1_p13 as USCit_b
+    ,w1_p13a as USCitNat_b
+    ,w1_p4 as Sex_Orient
+    ,w1_p5 as LGBTRel_b
+    ,w1_p6 as MilitaryHHAct_b
+    ,w1_p8 as UnionHH_b
+    ,w1_p9 as ArrestHH_b
+    ,w1_p10 as ConvictFAM_b
+    ,w1_p11 as UnEeHH_b
+    
+    ,w1_j1_b as IncSHPnlty_10
+    ,w1_p14 as HealthIns_b
+    ,w1_p15 as StockInv_b
+    ,w1_p20 as IncomeGrp
+    ,w1_p21 as DigiCable_b
+    ,w1_q1_a as neighcablehard
+
+/* Optimism: Relationships */
+    ,w1_e2 as Optmsm_Rlshp 
+    ,w1_e2a as Optmsm_Rlshp_ntr 
+
+/* Optimism: Personal and Children's Future */		
+    ,w1_f1 as Optmsm_Futr
+    ,w1_f1a as Optmsm_Futr_ntr
+    ,w1_f2 as OptmsmUS_Futr
+    ,w1_f2a as OptmsmUS_Futr_ntr
+
+/* Optimism: Life Goals */
+    ,w1_f3 as WorkHardGetAhead
+    ,w1_f4_a as HardToOwnHome
+    ,w1_f4_b as HardToRetire
+    ,w1_f4_c as HardToCollege
+    ,w1_f4_d as HardToWealth
+    ,w1_f4_e as HardToBetterParents
+    ,w1_f5_a as HardChildToOwnHome
+    ,w1_f5_b as HardChildToRetire
+    ,w1_f5_c as HardChildColl
+    ,w1_f5_d as HardChildWealth
+    ,w1_f5_e as HardChildBetPar
+    ,w1_f6 as RateDrmPath_10
+
+/* View on Economy */
+    ,w1_j3a_b as Change2008Pov
+
+/* View on Institutions */
+    ,w1_k1_a as TrustWash
+    ,w1_k1_b as TrustPolice
+    ,w1_k1_c as TrustLegal		
+    ,w1_n1h as RateUnion_100
+    ,w1_n1n as RatePubTch_100
+/* View on Groups*/
+    ,w1_n1c as RateLatino_100
+    ,w1_n1f as RateAsian_100
+    ,w1_n1d as RateWhite_100
+    ,w1_n1e as RateBlk_100
+    ,w1_n1b as RateNatAm_100
+    ,w1_h2 as NatAmWellProg
+    ,w1_h3 as GovtRespNatAmTdy
+
+    ,w1_n1g as RateLGBT_100
+    ,w1_n1k as RateUnEe_100
+    ,w1_n1l as RateUnWed_100
+    ,w1_n1a as RatePplWelf_100
+    ,w1_n1m as RateUnDoc_100
+
+/* Inter-racial dating */		
+    ,w1_e3 as DatedOSRace_b
+    ,w1_e4 as WillDateOSRace_b
+    ,w1_e7 as SexOSRace_b
+    ,w1_e8 as SexOSRace_ntr
+
+/* Views on black progress */
+    ,w1_h1 as BWEqulOppty
+    ,w1_k4 as BWEqulJust_7
+    ,w1_QB1 as BlkProg20_b
+    ,w1_h4 as BlksLTDeserve
+    ,w1_h5 as BlksNoFvrIIJO
+    ,w1_h6 as BlksTryHarder
+    ,w1_h7 as SlavDiscrmHardForBlks
+    ,w1_h8 as NoBlkDiscrm
+
+/* Views on Black Child-Rearing */
+    ,w1_o1 as BlkTchFightDisc
+    ,w1_o3 as BlkTchNotWhite
+    ,w1_o4 as BlkTchAvdStyp
+    ,w1_o5 as BlkTchCrflPol  
+
+/* Effects of Blacks */
+    ,w1_qa2 as BlkEffect_b
+    ,w1_qa2a as BlkEffect_ntr
+    ,w1_QB2 as BlkMenEffect_b
+    ,w1_QB3 as BlkWomEffect_b
+
+/* Views on Black Self-Determination */
+    ,w1_qa4c as BlackOwned
+    ,w1_qa5d as BlackNoWhite
+
+    ,*
+from work.import
+order by w1_caseid
+;quit;
+
+proc contents data=home.ool_rename(drop=w1_: w2_: PP:) varnum;run;
+proc freq data=home.ool_rename(drop=w1_: w2_: PP:);run;
+proc means data=home.ool_rename(drop=w1_: w2_: PP:);
+run;
+
+data home.ool_clean;
+	set home.ool_rename(drop=w1_: w2_: PP:);
+	
+	* clean the num values;
+	array nums _numeric_;
+	do over nums;
+		if nums=998 then nums=.;
+	end;
+	
+	* clean the character values;
+	array chars _character_;
+	do over chars;
+		if chars = '-' then chars="";
+	end;
+	
+	* convert dep var 0->2(Not TPM) otherwise 1 (IS TPM);
+	if TeaPartyMem_b =0 then TeaPartyMem_b=2; 			/*Not TPM*/
+		else TeaPartyMem_b=1; 							/*Is TPM*/
+run;
+
+proc contents data=home.ool_clean(drop=caseid) varnum;run;
+proc freq data=home.ool_clean(drop=caseid);run;
+proc means data=home.ool_clean(drop=caseid);
+run;
