@@ -18,12 +18,12 @@ st.set_page_config(page_title="Proxy Politics Dashboard", layout="wide")
 def load_data():
     # Get the directory where this script is located
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    base = current_dir  # pickles are in the same folder
-    with open(os.path.join(base, 'data_2016.pkl'), 'rb') as f:
+    # The pickle files are in the same directory
+    with open(os.path.join(current_dir, 'data_2016.pkl'), 'rb') as f:
         X16, y16 = pickle.load(f)
-    with open(os.path.join(base, 'data_2020.pkl'), 'rb') as f:
+    with open(os.path.join(current_dir, 'data_2020.pkl'), 'rb') as f:
         X20, y20 = pickle.load(f)
-    with open(os.path.join(base, 'data_2024.pkl'), 'rb') as f:
+    with open(os.path.join(current_dir, 'data_2024.pkl'), 'rb') as f:
         X24, y24 = pickle.load(f)
     return (X16, y16), (X20, y20), (X24, y24)
 
