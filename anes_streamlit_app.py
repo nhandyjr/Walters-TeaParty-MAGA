@@ -16,7 +16,9 @@ st.set_page_config(page_title="Proxy Politics Dashboard", layout="wide")
 # ------------------------------------------------------------
 @st.cache_data
 def load_data():
-    base = r"C:\Users\Owner\Desktop\Data Science\Eastern\691\walters\code"
+    # Get the directory where this script is located
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base = current_dir  # pickles are in the same folder
     with open(os.path.join(base, 'data_2016.pkl'), 'rb') as f:
         X16, y16 = pickle.load(f)
     with open(os.path.join(base, 'data_2020.pkl'), 'rb') as f:
