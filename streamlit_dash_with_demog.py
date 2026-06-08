@@ -66,6 +66,7 @@ weight = st.sidebar.slider("Minority class weight (Trump supporters)", min_value
 feature_set = st.sidebar.radio("Feature set", ["Attitudes only", "Attitudes + Demographics"])
 algorithm = st.sidebar.selectbox("Algorithm", ["Decision Tree", "Random Forest", "XGBoost"])
 
+# Choose data based on feature_set
 if feature_set == "Attitudes only":
     X_dict = {2016: X16_att, 2020: X20_att, 2024: X24_att}
     y_dict = {2016: y16_att, 2020: y20_att, 2024: y24_att}
@@ -84,6 +85,80 @@ else:
 
 X = X_dict[year]
 y = y_dict[year]
+
+# ------------------------------------------------------------
+# Cached train/test split (only recompute when X or y changes)
+# ------------------------------------------------------------
+@st.cache_data
+def get_train_test_split(X, y):
+    return train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+X_train, X_test, y_train, y_test = get_train_test_split(X, y)
+
+# ------------------------------------------------------------
+# Cached model training (only recompute when algorithm, weight, or training set changes)
+# ------------------------------------------------------------
+@st.cache_resource
+def get_cached_model(algorithm, weight, X_train_hash, y_train_hash):
+    # The hash arguments are dummy; we pass the actual arrays but caching uses the hash.
+    # To avoid large memory duplication, we use the identity of the arrays as proxy.
+    # In practice, we'll just use X_train and y_train directly inside the function.
+    # Better: use the actual X_train and y_train from the outer scope.
+    pass
+
+# But because st.cache_resource cannot directly hash large DataFrames efficiently,
+# we will use a simple approach: wrap the model training in a function that takes
+# the relevant parameters and the training data. Streamlit will cache based on the
+# data's hash (which is fine for moderate size data).
+@st.cache_resource
+def train_cached_model(X_train, y_train, algorithm, weight):
+    if algorithm == "Decision Tree":
+        model = DecisionTreeClassifier(class_weight={0:1, 1:weight}, max_depth=5, random_state=42)
+    elif algorithm == "Random Forest":
+        model = RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=42)
+    else:  # XGBoost – full n_estimators (cached)
+        model = XGBClassifier(scale_pos_weight=weight, n_estimators=100, random_state=42, verbosity=0)
+    model.fit(X_train, y_train)
+    return model
+
+model = train_cached_model(X_train, y_train, algorithm, weight)
+
+# ------------------------------------------------------------
+# Evaluate on test set
+# ------------------------------------------------------------
+y_pred = model.predict(X_test)
+y_proba = model.predict_proba(X_test)[:, 1]
+auc = roc_auc_score(y_test, y_proba)
+tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
+sens = tp/(tp+fn) if (tp+fn)>0 else 0
+spec = tn/(tn+fp) if (tn+fp)>0 else 0
+prec = tp/(tp+fp) if (tp+fp)>0 else 0
+f1 = 2*prec*sens/(prec+sens) if (prec+sens)>0 else 0
+
+col1, col2, col3, col4, col5 = st.columns(5)
+col1.metric("AUC", f"{auc:.3f}")
+col2.metric("Sensitivity", f"{sens:.3f}")
+col3.metric("Specificity", f"{spec:.3f}")
+col4.metric("Precision", f"{prec:.3f}")
+col5.metric("F1 Score", f"{f1:.3f}")
+
+# ------------------------------------------------------------
+# Feature importances (if available)
+# ------------------------------------------------------------
+if hasattr(model, 'feature_importances_'):
+    st.subheader(f"📈 Feature Importances ({algorithm})")
+    importances = model.feature_importances_
+    features = X.columns
+    order = np.argsort(importances)[::-1]
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.barh(range(len(order)), importances[order], color='steelblue')
+    ax.set_yticks(range(len(order)))
+    ax.set_yticklabels(features[order])
+    ax.set_xlabel('Importance')
+    ax.invert_yaxis()
+    st.pyplot(fig)
+else:
+    st.info("Feature importances not available for this model.")
 
 # ------------------------------------------------------------
 # User-defined demographic profile (if demographics are used)
@@ -118,60 +193,15 @@ if feature_set == "Attitudes + Demographics" and has_demo and demo_cols:
     user_row = {**median_vals, **demo_values}
     user_obs = pd.DataFrame([user_row])
 
-# ------------------------------------------------------------
-# Train model and evaluate on test set
-# ------------------------------------------------------------
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
-
-def train_model(alg):
-    if alg == "Decision Tree":
-        model = DecisionTreeClassifier(class_weight={0:1, 1:weight}, max_depth=5, random_state=42)
-    elif alg == "Random Forest":
-        model = RandomForestClassifier(class_weight='balanced', n_estimators=100, random_state=42)
-    else:  # XGBoost
-        model = XGBClassifier(scale_pos_weight=weight, n_estimators=100, random_state=42, verbosity=0)
-    model.fit(X_train, y_train)
-    return model
-
-model = train_model(algorithm)
-
-y_pred = model.predict(X_test)
-y_proba = model.predict_proba(X_test)[:, 1]
-auc = roc_auc_score(y_test, y_proba)
-tn, fp, fn, tp = confusion_matrix(y_test, y_pred).ravel()
-sens = tp/(tp+fn) if (tp+fn)>0 else 0
-spec = tn/(tn+fp) if (tn+fp)>0 else 0
-prec = tp/(tp+fp) if (tp+fp)>0 else 0
-f1 = 2*prec*sens/(prec+sens) if (prec+sens)>0 else 0
-
-col1, col2, col3, col4, col5 = st.columns(5)
-col1.metric("AUC", f"{auc:.3f}")
-col2.metric("Sensitivity", f"{sens:.3f}")
-col3.metric("Specificity", f"{spec:.3f}")
-col4.metric("Precision", f"{prec:.3f}")
-col5.metric("F1 Score", f"{f1:.3f}")
-
-if hasattr(model, 'feature_importances_'):
-    st.subheader(f"📈 Feature Importances ({algorithm})")
-    importances = model.feature_importances_
-    features = X.columns
-    order = np.argsort(importances)[::-1]
-    fig, ax = plt.subplots(figsize=(8, 5))
-    ax.barh(range(len(order)), importances[order], color='steelblue')
-    ax.set_yticks(range(len(order)))
-    ax.set_yticklabels(features[order])
-    ax.set_xlabel('Importance')
-    ax.invert_yaxis()
-    st.pyplot(fig)
-else:
-    st.info("Feature importances not available for this model.")
-
 if user_obs is not None:
     st.subheader("👤 Predict for your demographic profile")
     proba = model.predict_proba(user_obs)[0, 1]
     st.write(f"**Predicted probability of Trump support:** {proba:.1%}")
     st.caption("Attitude features are set to their median values in the dataset.")
 
+# ------------------------------------------------------------
+# Decision tree rules (only for Decision Tree)
+# ------------------------------------------------------------
 if algorithm == "Decision Tree":
     st.subheader("🌳 Decision Tree Rules (first 2 levels)")
     def get_rules(dt, feature_names, max_depth=2):
