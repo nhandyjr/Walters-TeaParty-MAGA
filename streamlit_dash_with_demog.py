@@ -26,29 +26,33 @@ st.markdown("Explore how different minority class weights, features, and demogra
 # ------------------------------------------------------------
 # Load data (attitudes only and with demographics)
 # ------------------------------------------------------------
-output_dir = r"C:\Users\Owner\Desktop\Data Science\Eastern\691\walters\viz"
+#output_dir = r"C:\Users\Owner\Desktop\Data Science\Eastern\691\walters\viz"
 
 @st.cache_data
 def load_data():
-    # Attitudes only
-    with open(os.path.join(output_dir, 'data_2016.pkl'), 'rb') as f:
+    # Get the directory where this script is located
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Attitudes only (pickles are in the same folder as the script)
+    with open(os.path.join(current_dir, 'data_2016.pkl'), 'rb') as f:
         X16_att, y16_att = pickle.load(f)
-    with open(os.path.join(output_dir, 'data_2020.pkl'), 'rb') as f:
+    with open(os.path.join(current_dir, 'data_2020.pkl'), 'rb') as f:
         X20_att, y20_att = pickle.load(f)
-    with open(os.path.join(output_dir, 'data_2024.pkl'), 'rb') as f:
+    with open(os.path.join(current_dir, 'data_2024.pkl'), 'rb') as f:
         X24_att, y24_att = pickle.load(f)
     
     # Demographics (if available)
+    has_demo = False
     try:
-        with open(os.path.join(output_dir, 'data_2016_demo.pkl'), 'rb') as f:
+        with open(os.path.join(current_dir, 'data_2016_demo.pkl'), 'rb') as f:
             X16_demo, y16_demo = pickle.load(f)
-        with open(os.path.join(output_dir, 'data_2020_demo.pkl'), 'rb') as f:
+        with open(os.path.join(current_dir, 'data_2020_demo.pkl'), 'rb') as f:
             X20_demo, y20_demo = pickle.load(f)
-        with open(os.path.join(output_dir, 'data_2024_demo.pkl'), 'rb') as f:
+        with open(os.path.join(current_dir, 'data_2024_demo.pkl'), 'rb') as f:
             X24_demo, y24_demo = pickle.load(f)
         has_demo = True
     except:
-        has_demo = False
+        # If demo pickles not found, use attitudes only
         X16_demo, y16_demo = X16_att, y16_att
         X20_demo, y20_demo = X20_att, y20_att
         X24_demo, y24_demo = X24_att, y24_att
