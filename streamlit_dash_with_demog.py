@@ -79,7 +79,6 @@ else:
     else:
         X_dict = {2016: X16_demo, 2020: X20_demo, 2024: X24_demo}
         y_dict = {2016: y16_demo, 2020: y20_demo, 2024: y24_demo}
-        # Identify demographic columns (those not in attitude-only set)
         att_cols = X16_att.columns.tolist()
         demo_cols = [col for col in X_dict[year].columns if col not in att_cols]
 
@@ -152,9 +151,6 @@ col3.metric("Specificity", f"{spec:.3f}")
 col4.metric("Precision", f"{prec:.3f}")
 col5.metric("F1 Score", f"{f1:.3f}")
 
-# ------------------------------------------------------------
-# Feature importance (if available)
-# ------------------------------------------------------------
 if hasattr(model, 'feature_importances_'):
     st.subheader(f"📈 Feature Importances ({algorithm})")
     importances = model.feature_importances_
@@ -170,18 +166,12 @@ if hasattr(model, 'feature_importances_'):
 else:
     st.info("Feature importances not available for this model.")
 
-# ------------------------------------------------------------
-# Predict for user-defined demographic profile
-# ------------------------------------------------------------
 if user_obs is not None:
     st.subheader("👤 Predict for your demographic profile")
     proba = model.predict_proba(user_obs)[0, 1]
     st.write(f"**Predicted probability of Trump support:** {proba:.1%}")
     st.caption("Attitude features are set to their median values in the dataset.")
 
-# ------------------------------------------------------------
-# Decision tree rules (only for Decision Tree)
-# ------------------------------------------------------------
 if algorithm == "Decision Tree":
     st.subheader("🌳 Decision Tree Rules (first 2 levels)")
     def get_rules(dt, feature_names, max_depth=2):
