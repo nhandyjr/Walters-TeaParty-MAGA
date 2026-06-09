@@ -1,4 +1,4 @@
-# Proxy Politics: From Tea Party to MAGA
+# Predicting Political Support Features Across Election Cycles (2012 -2024) 
 
 **Predicting Trump support (2016‑2024) and Tea Party membership (2012) from survey proxy questions.**
 
@@ -6,10 +6,7 @@
 
 ## 📌 Overview
 
-This project tests **Ronald Walters' proxy theory** – the idea that racial resentment is expressed through seemingly neutral survey questions. Using machine learning on ANES (2016‑2024) and OOL (2012) data, we identify which questions most strongly predict:
-
-- Strong Trump support (feeling thermometer ≥ 70)
-- Tea Party membership (2012, rare event: 2% of sample)
+This project tests **Ronald Walters' proxy theory** – the idea that racial resentment is expressed through seemingly neutral survey questions. Using machine learning on ANES (2016‑2024) and OOL (2012) data, we identify which questions most strongly predict (1) Strong Trump support (feeling thermometer ≥ 70); (2) Tea Party membership (2012, rare event: 2% of sample), and (3) stability of these features over election cycles.
 
 **Key findings:**
 
