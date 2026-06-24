@@ -250,25 +250,31 @@ if user_obs is not None:
 # ------------------------------------------------------------
 # Decision tree rules (only for Decision Tree)
 # ------------------------------------------------------------
+# if algorithm == "Decision Tree":
+#     st.subheader("🌳 Decision Tree Rules (first 2 levels)")
+#     def get_rules(dt, feature_names, max_depth=2):
+#         rules = []
+#         def recurse(node, depth, condition):
+#             if depth > max_depth:
+#                 return
+#             if dt.tree_.children_left[node] == dt.tree_.children_right[node]:
+#                 proba = dt.tree_.value[node][0][1] / dt.tree_.value[node][0].sum()
+#                 rules.append(f"{condition} → P(Trump) = {proba:.2f}")
+#             else:
+#                 feat = feature_names[dt.tree_.feature[node]]
+#                 thr = dt.tree_.threshold[node]
+#                 recurse(dt.tree_.children_left[node], depth+1, f"{condition} & ({feat} ≤ {thr:.2f})")
+#                 recurse(dt.tree_.children_right[node], depth+1, f"{condition} & ({feat} > {thr:.2f})")
+#         recurse(0, 0, "Root")
+#         return rules
+#     rules = get_rules(model, X.columns, max_depth=2)
+#     st.text("\n".join(rules[:15]))
+    
 if algorithm == "Decision Tree":
     st.subheader("🌳 Decision Tree Rules (first 2 levels)")
-    def get_rules(dt, feature_names, max_depth=2):
-        rules = []
-        def recurse(node, depth, condition):
-            if depth > max_depth:
-                return
-            if dt.tree_.children_left[node] == dt.tree_.children_right[node]:
-                proba = dt.tree_.value[node][0][1] / dt.tree_.value[node][0].sum()
-                rules.append(f"{condition} → P(Trump) = {proba:.2f}")
-            else:
-                feat = feature_names[dt.tree_.feature[node]]
-                thr = dt.tree_.threshold[node]
-                recurse(dt.tree_.children_left[node], depth+1, f"{condition} & ({feat} ≤ {thr:.2f})")
-                recurse(dt.tree_.children_right[node], depth+1, f"{condition} & ({feat} > {thr:.2f})")
-        recurse(0, 0, "Root")
-        return rules
-    rules = get_rules(model, X.columns, max_depth=2)
-    st.text("\n".join(rules[:15]))
+    from sklearn.tree import export_text
+    tree_rules = export_text(model, feature_names=list(X.columns), max_depth=2)
+    st.text(tree_rules)
 
 st.markdown("---")
 st.caption("Data: ANES 2016‑2024 | Model: Decision Tree (max_depth=5) | Dashboard built with Streamlit")
