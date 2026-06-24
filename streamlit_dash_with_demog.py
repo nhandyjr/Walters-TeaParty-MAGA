@@ -251,25 +251,40 @@ if user_obs is not None:
 # Decision tree rules (only for Decision Tree)
 # ------------------------------------------------------------
 if algorithm == "Decision Tree":
-    st.subheader("🌳 Decision Tree – Root Split (most important rule)")
+    st.subheader("🌳 Decision Tree Rules (first 2 levels)")
     
-    from sklearn.tree import plot_tree
-    import matplotlib.pyplot as plt
-    
-    fig, ax = plt.subplots(figsize=(10, 4))
-    plot_tree(
-        model,
-        feature_names=X.columns,
-        class_names=["Non‑Trump", "Trump"],
-        filled=True,
-        rounded=True,
-        max_depth=1,
-        fontsize=12,
-        ax=ax
-    )
-    st.pyplot(fig)
-    
-    st.caption("This shows the first split (the most important feature). Each leaf shows the percentage of Trump supporters in that branch.")
+    # Custom function to print tree rules up to depth 2 (clean and compact)
+    def print_tree_rules(model, feature_names, max_depth=2):
+        tree = model.tree_
+        rules = []
+        def recurse(node, depth, condition):
+            if depth > max_depth:
+                return
+            # If leaf node (no children)
+            if tree.children_left[node] == tree.children_right[node]:
+                proba = tree.value[node][0][1] / tree.value[node][0].sum()
+                rules.append(f"{'  ' * depth}{condition} → P(Trump) = {proba:.2f}")
+            else:
+                feature = feature_names[tree.feature[node]]
+                threshold = tree.threshold[node]
+                left_cond = f"({feature} ≤ {threshold:.2f})"
+                right_cond = f"({feature} > {threshold:.2f})"
+                # Only show split info if depth == 0 (root) or depth == 1 (first split)
+                if depth == 0:
+                    rules.append(f"Root: {left_cond}  |  {right_cond}")
+                else:
+                    # For depth 1, show the conditions with indentation
+                    rules.append(f"{'  ' * depth}{condition} → {left_cond}")
+                    rules.append(f"{'  ' * depth}{condition} → {right_cond}")
+                recurse(tree.children_left[node], depth+1, left_cond)
+                recurse(tree.children_right[node], depth+1, right_cond)
+        recurse(0, 0, "")
+        return rules
 
+    rules = print_tree_rules(model, X.columns, max_depth=2)
+    if rules:
+        st.text("\n".join(rules[:20]))
+    else:
+        st.info("No rules extracted.")
 st.markdown("---")
 st.caption("Data: ANES 2016‑2024 | Model: Decision Tree (max_depth=5) | Dashboard built with Streamlit")
