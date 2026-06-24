@@ -251,20 +251,19 @@ if user_obs is not None:
 # Decision tree rules (only for Decision Tree)
 # ------------------------------------------------------------
 if algorithm == "Decision Tree":
-    st.subheader("🌳 Decision Tree Visualization")
+    st.subheader("🌳 Decision Tree Visualization (first 3 levels)")
     
-    # Limit depth for readability (show only first 3 levels)
     from sklearn.tree import plot_tree
     import matplotlib.pyplot as plt
     
-    fig, ax = plt.subplots(figsize=(20, 10))
+    fig, ax = plt.subplots(figsize=(20, 8))
     plot_tree(
         model,
         feature_names=X.columns,
         class_names=["Non‑Trump", "Trump"],
         filled=True,
         rounded=True,
-        max_depth=3,           # Show only first 3 levels to keep it readable
+        max_depth=3,           # Show only first 3 splits
         fontsize=10,
         ax=ax
     )
