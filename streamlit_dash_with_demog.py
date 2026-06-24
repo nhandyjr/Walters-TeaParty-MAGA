@@ -251,23 +251,25 @@ if user_obs is not None:
 # Decision tree rules (only for Decision Tree)
 # ------------------------------------------------------------
 if algorithm == "Decision Tree":
-    st.subheader("🌳 Decision Tree Visualization (first 2 levels)")
+    st.subheader("🌳 Decision Tree – Root Split (most important rule)")
     
     from sklearn.tree import plot_tree
     import matplotlib.pyplot as plt
     
-    fig, ax = plt.subplots(figsize=(20, 6))
+    fig, ax = plt.subplots(figsize=(10, 4))
     plot_tree(
         model,
         feature_names=X.columns,
         class_names=["Non‑Trump", "Trump"],
         filled=True,
         rounded=True,
-        max_depth=2,           # Root + 2 splits – clean and readable
-        fontsize=10,
+        max_depth=1,
+        fontsize=12,
         ax=ax
     )
     st.pyplot(fig)
+    
+    st.caption("This shows the first split (the most important feature). Each leaf shows the percentage of Trump supporters in that branch.")
 
 st.markdown("---")
 st.caption("Data: ANES 2016‑2024 | Model: Decision Tree (max_depth=5) | Dashboard built with Streamlit")
