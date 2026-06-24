@@ -56,6 +56,32 @@ X20_demo, y20_demo = data[4]
 X24_demo, y24_demo = data[5]
 has_demo = data[6]
 
+# Income level mapping (based on ANES 2020/2024 codebook)
+income_labels = {
+    1: "Under $9,999",
+    2: "$10,000 - $14,999",
+    3: "$15,000 - $19,999",
+    4: "$20,000 - $24,999",
+    5: "$25,000 - $29,999",
+    6: "$30,000 - $34,999",
+    7: "$35,000 - $39,999",
+    8: "$40,000 - $44,999",
+    9: "$45,000 - $49,999",
+    10: "$50,000 - $59,999",
+    11: "$60,000 - $64,999",
+    12: "$65,000 - $69,999",
+    13: "$70,000 - $74,999",
+    14: "$75,000 - $79,999",
+    15: "$80,000 - $89,999",
+    16: "$90,000 - $99,999",
+    17: "$100,000 - $109,999",
+    18: "$110,000 - $124,999",
+    19: "$125,000 - $149,999",
+    20: "$150,000 - $174,999",
+    21: "$175,000 - $249,999",
+    22: "$250,000 or more"
+}
+
 # ------------------------------------------------------------
 # Sidebar controls
 # ------------------------------------------------------------
@@ -173,9 +199,17 @@ if feature_set == "Attitudes + Demographics" and has_demo and demo_cols:
         elif col == 'education':
             demo_values[col] = st.sidebar.slider("Education (1-16)", 1, 16, 12)
         elif col == 'income':
-            min_inc = int(X[col].min()) if not np.isnan(X[col].min()) else 1
-            max_inc = int(X[col].max()) if not np.isnan(X[col].max()) else 20
-            demo_values[col] = st.sidebar.slider("Income level", min_inc, max_inc, (min_inc+max_inc)//2)
+            # Get min and max valid income codes (skip negative missing codes)
+            valid_income = X[col][X[col] >= 1]
+            min_inc = int(valid_income.min()) if len(valid_income) > 0 else 1
+            max_inc = int(valid_income.max()) if len(valid_income) > 0 else 22
+            inc_code = st.sidebar.selectbox(
+                "Income level",
+                options=list(range(min_inc, max_inc+1)),
+                format_func=lambda x: income_labels.get(x, f"Level {x}"),
+                index=(min_inc + max_inc)//2 - min_inc
+            )
+            demo_values[col] = inc_code
         elif col == 'female':
             demo_values[col] = st.sidebar.selectbox("Gender", ["Male", "Female"]) == "Female"
         elif col == 'white':
@@ -193,10 +227,24 @@ if feature_set == "Attitudes + Demographics" and has_demo and demo_cols:
     user_row = {**median_vals, **demo_values}
     user_obs = pd.DataFrame([user_row])
 
+# if user_obs is not None:
+#     st.subheader("👤 Predict for your demographic profile")
+#     proba = model.predict_proba(user_obs)[0, 1]
+#     st.write(f"**Predicted probability of Trump support:** {proba:.1%}")
+#     st.caption("Attitude features are set to their median values in the dataset.")
+
 if user_obs is not None:
-    st.subheader("👤 Predict for your demographic profile")
+    st.markdown("---")
+    st.markdown("## 🎯 Your Prediction")
     proba = model.predict_proba(user_obs)[0, 1]
-    st.write(f"**Predicted probability of Trump support:** {proba:.1%}")
+    # Color based on probability
+    color = "red" if proba > 0.5 else "blue"
+    st.markdown(
+        f'<div style="background-color:{color}; padding:20px; border-radius:10px; text-align:center;">'
+        f'<h2 style="color:white; margin:0;">Trump support probability: <strong>{proba:.1%}</strong></h2>'
+        f'</div>',
+        unsafe_allow_html=True
+    )
     st.caption("Attitude features are set to their median values in the dataset.")
 
 # ------------------------------------------------------------
